@@ -1,9 +1,16 @@
+# I was trying to crawl data from cpchain.io/explorer/rnode
+# but I later realized that using API is much easier
+# this file is no more useful :)
+
+
 import time
 import requests
 import urllib.parse
 import sys
 import codecs
 import csv
+import os
+
 
 
 defined_timeout = 100
@@ -23,7 +30,7 @@ def csv_write(list_result):
     with codecs.open('rnode.csv', 'a', 'gb18030') as f:
         writer = csv.writer(f)
         for item in list_result:
-            line = item["addr"] + ", " + item["RRT"]
+            line = item["addr"] + ", " + item["RPT"]
             writer.writerow(line)
 
 
@@ -45,46 +52,48 @@ def csv_write_simplied(detailed_info):
 def addr_parser(content, numOfRnode):
 
     Rnodes = []
-    while i in range(0, numOfRnode):
+    left_anchor = 0
+    right_anchor = 1
+    for i in range(0, numOfRnode):
         temp_element = {"addr": "", "RPT": 0}
-        deliminator_key = "/explorer/address/"
-        temp_element["city"] = content[left_anchor + 1: right_anchor]
+        left_anchor = content.find(r"/explorer/address/", right_anchor)
+        right_anchor = content.find(r"\" ", left_anchor)
 
-        left_anchor = content.find("<div class=\"col-2 text-truncate card-grey\"", right_anchor)
-        right_anchor = content.find("<", left_anchor)
-        temp_element["RPT"] = int(content[left_anchor + 1: right_anchor])
+        print(left_anchor, right_anchor)
+        input()
+        temp_element["addr"] = content[left_anchor + 1: right_anchor]
 
+        left_anchor = content.find(r"<div class=\"col-2 text-truncate card-grey\"", right_anchor)
+        right_anchor = content.find(r"<", left_anchor)
+        # temp_element["RPT"] = int(content[left_anchor + 1: right_anchor])
+        temp_element["RPT"] = content[left_anchor + 1: right_anchor]
 
         # print(content[left_anchor+1: left_anchor+20])
         print(temp_element)
+        input()
         Rnodes.append(temp_element)
+
     return Rnodes
 
 
-def rnode_parser(content):
-    index_url = "https://cpchain.io/explorer/rnode/"
+def rnode_parser(numOfRnode):
+    # index_url = "https://cpchain.io/explorer/rnode/"
+    index_url = "https://cpcstats.com/transactions/0x27e81a296f5b80d319d2f3008f2d5998530e79e4"
 
+    content = requests.post(index_url, timeout=defined_timeout)
+    str_content = content.text
+    print(str_content)
+    detailed_info = addr_parser(str_content, numOfRnode)
+    # csv_write_simplied(detailed_info)
+    # time.sleep(3)
 
-    try:
-        addr_content = requests.post(index_url, timeout=defined_timeout)
-        str_content = addr_content.text
-        detailed_info = addr_parser(str_content, temp_element["num"])
-        # csv_write_simplied(detailed_info)
-        # time.sleep(3)
-    except:
-    pass
-            # raise
-
-
-
-
-    # print(list_result)
+    # print(detailed_info)
     csv_write(detailed_info)
 
 
 def main():
 
-    numOfRnode = 1
+    numOfRnode = 10
     url = "https://cpchain.io/explorer/rnode/"
 
     if len(sys.argv) >= 2:
@@ -93,17 +102,7 @@ def main():
         url = sys.argv[2]
     print(url)
 
-
-    try:
-        content = requests.post(url, timeout=defined_timeout)
-        str_content = content.text
-        rnode_parser(str_content)
-    except:
-        i -= 1
-        # raise
-
-        time.sleep(5)
-        # print(str_content)
+    rnode_parser(numOfRnode)
 
 
 if __name__ == '__main__':
