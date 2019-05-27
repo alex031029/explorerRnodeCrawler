@@ -19,18 +19,11 @@ post_data = {"TAB_QuerySubmitPagerData": "3",
 
 
 def csv_write(list_result):
-    attributes = ["num", "city", "supervision_code", "PJ_title", "addr", "area", "source", "used_for", "method",
-                  "useful_life", "category",
-                  "soil_level", "price", "pay_num", "scheduled_pay_date", "scheduled_price", "remarks",
-                  "owner", "lower_bound", "upper_bound", "scheduled_handing_time",
-                  "scheduled_begin_time", "scheduled_end_time", "actual_begin_time", "actual_end_time",
-                  "approver", "sign_date"]
-    with codecs.open('mengtian_detailed.csv', 'a', 'gb18030') as f:
+
+    with codecs.open('rnode.csv', 'a', 'gb18030') as f:
         writer = csv.writer(f)
         for item in list_result:
-            line = []
-            for item2 in attributes:
-                line.append(item[item2])
+            line = item["addr"] + ", " + item["RRT"]
             writer.writerow(line)
 
 
@@ -49,124 +42,65 @@ def csv_write_simplied(detailed_info):
         writer.writerow(line)
 
 
-def addr_parser(content, num):
-    temp_element = {"num": num, "addr": "", RPT: 0}
-    deliminator_key = "/explorer/address/"
-    temp_element["city"] = content[left_anchor + 1: right_anchor]
+def addr_parser(content, numOfRnode):
 
-    left_anchor = content.find("<div class=\"col-2 text-truncate card-grey\"", right_anchor)
-    right_anchor = content.find("<", left_anchor)
-    temp_element["RPT"] = int(content[left_anchor + 1: right_anchor])
+    Rnodes = []
+    while i in range(0, numOfRnode):
+        temp_element = {"addr": "", "RPT": 0}
+        deliminator_key = "/explorer/address/"
+        temp_element["city"] = content[left_anchor + 1: right_anchor]
 
-
-    # print(content[left_anchor+1: left_anchor+20])
-    print(temp_element)
-    return temp_element
-
-
-def land_parser(content):
-    number_key = "gridTdNumber"
-    content_key = "queryCellBordy"
-    addr_key = "_blank"
-    list_result = []
-    temp_anchor = content.find(number_key)
-    index_url = "http://www.landchina.com/"
-
-    while(temp_anchor != -1):
-        temp_element = {"num": "", "city": "", "addr": "", "area": "", "used_for": "", "method": "", "date": "",
-                        "addr_link": ""}
-        left_anchor = content.find(">", temp_anchor)
+        left_anchor = content.find("<div class=\"col-2 text-truncate card-grey\"", right_anchor)
         right_anchor = content.find("<", left_anchor)
-        print(content[left_anchor + 1:right_anchor - 1])
-        temp_element["num"] = content[left_anchor + 1:right_anchor - 1]
+        temp_element["RPT"] = int(content[left_anchor + 1: right_anchor])
 
-        left_anchor = content.find(content_key, right_anchor)
-        left_anchor = content.find(">", left_anchor)
-        right_anchor = content.find("<", left_anchor)
-        # temp_element['city'] = content[left_anchor + 1:right_anchor]
 
-        left_anchor = content.find("default.aspx", right_anchor)
-        right_anchor = content.find("target=", left_anchor)
-        temp_element['addr_link'] = content[left_anchor:right_anchor - 2]
-        try:
-            addr_content = requests.post(index_url + temp_element['addr_link'], timeout=defined_timeout)
-            str_content = addr_content.text
-            detailed_info = addr_parser(str_content, temp_element["num"])
-            list_result.append(detailed_info)
-            # csv_write_simplied(detailed_info)
-            # time.sleep(3)
-        except:
-        pass
+        # print(content[left_anchor+1: left_anchor+20])
+        print(temp_element)
+        Rnodes.append(temp_element)
+    return Rnodes
+
+
+def rnode_parser(content):
+    index_url = "https://cpchain.io/explorer/rnode/"
+
+
+    try:
+        addr_content = requests.post(index_url, timeout=defined_timeout)
+        str_content = addr_content.text
+        detailed_info = addr_parser(str_content, temp_element["num"])
+        # csv_write_simplied(detailed_info)
+        # time.sleep(3)
+    except:
+    pass
             # raise
 
-        temp_anchor = content.find(number_key, right_anchor)
 
 
-        """
-        left_anchor = content.find(addr_key, right_anchor)
-        left_anchor = content.find(">", left_anchor)
-        right_anchor = content.find("<", left_anchor)
-        temp_element['addr'] = content[left_anchor + 1:right_anchor]
-
-        left_anchor = content.find(content_key, right_anchor)
-        left_anchor = content.find(">", left_anchor)
-        right_anchor = content.find("<", left_anchor)
-        temp_element['area'] = content[left_anchor + 1:right_anchor]
-
-        left_anchor = content.find(content_key, right_anchor)
-        left_anchor = content.find(">", left_anchor)
-        right_anchor = content.find("<", left_anchor)
-        temp_element['used_for'] = content[left_anchor + 1:right_anchor]
-
-        left_anchor = content.find(content_key, right_anchor)
-        left_anchor = content.find(">", left_anchor)
-        right_anchor = content.find("<", left_anchor)
-        temp_element['method'] = content[left_anchor + 1:right_anchor]
-
-        left_anchor = content.find(content_key, right_anchor)
-        left_anchor = content.find(">", left_anchor)
-        right_anchor = content.find("<", left_anchor)
-        temp_element['date'] = content[left_anchor + 1:right_anchor]
-        """
 
     # print(list_result)
-    csv_write(list_result)
+    csv_write(detailed_info)
 
 
 def main():
-    begin_page = "1"
+
+    numOfRnode = 1
     url = "https://cpchain.io/explorer/rnode/"
 
     if len(sys.argv) >= 2:
-        url = sys.argv[1]
+        numOfRnode = sys.argv[1]
     if len(sys.argv) >= 3:
-        begin_page = sys.argv[2]
+        url = sys.argv[2]
     print(url)
 
-    post_data = {"TAB_QuerySubmitPagerData": begin_page}
 
-    content = requests.post(url, data=post_data, timeout=defined_timeout)
-    str_content = content.text
-    max_page_key = "previousSibling.value"
-    left_anchor = str_content.find(max_page_key)
-    right_anchor = str_content.find(")", left_anchor)
-    max_page = str_content[left_anchor + 1 + len(max_page_key):right_anchor]
-    print(int(max_page))
-
-    # with codecs.open('mengtian.out', 'w', 'gbk') as f:
-    #    f.write(str_content)
-
-    land_parser(str_content)
-    # max_page = 2
-    for i in range(int(begin_page), int(max_page)):
-        try:
-            post_data["TAB_QuerySubmitPagerData"] = i + 1
-            content = requests.post(url, data=post_data, timeout=defined_timeout)
-            str_content = content.text
-            land_parser(str_content)
-        except:
-            i -= 1
-            # raise
+    try:
+        content = requests.post(url, timeout=defined_timeout)
+        str_content = content.text
+        rnode_parser(str_content)
+    except:
+        i -= 1
+        # raise
 
         time.sleep(5)
         # print(str_content)
