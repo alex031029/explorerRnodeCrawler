@@ -2,7 +2,7 @@
 # the relationship between RPT and number of mined blocks in 24 hours
 # The RNodes info are retrieved via CPC fusion APIs
 # And the number of mined blocks are crawled from cpcstates.com
-# Thanks to Erwin@telegram's spectacular website :)
+# Thanks to Erwin_nl@telegram's spectacular website :)
 
 from cpc_fusion import Web3
 import requests
