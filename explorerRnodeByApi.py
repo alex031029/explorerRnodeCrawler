@@ -62,7 +62,7 @@ def mined_blocks_parser(rnode):
 
 # initiate the connection
 def connect():
-    cf = Web3(Web3.HTTPProvider('http://3.1.81.79:8501'))
+    cf = Web3(Web3.HTTPProvider('http://127.0.0.1:8501'))
     return cf
 
 
