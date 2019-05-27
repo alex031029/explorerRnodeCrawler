@@ -1,3 +1,9 @@
+# This is for generate a csv file illustrating
+# the relationship between RPT and number of mined blocks in 24 hours
+# The RNodes info are retrieved via CPC fusion APIs
+# And the number of mined blocks are crawled from cpcstates.com
+# Thanks to Erwin@telegram's spectacular website :)
+
 from cpc_fusion import Web3
 import requests
 import csv
@@ -8,8 +14,11 @@ import time
 defined_timeout = 100
 
 
+# it is for writing the csv
 def csv_write(list_result):
 
+    # open a csv
+    # each line in csv is a tuple containing address, rpt and number of blocks
     with codecs.open('rnode.csv', 'w', 'gb18030') as f:
         writer = csv.writer(f)
         for item in list_result:
@@ -20,21 +29,7 @@ def csv_write(list_result):
             writer.writerow(line)
 
 
-def csv_write_simplied(detailed_info):
-    attributes = ["num", "city", "supervision_code", "PJ_title", "addr", "area", "source", "used_for", "method",
-                  "useful_life", "category",
-                  "soil_level", "price", "pay_num", "scheduled_pay_date", "scheduled_price", "remarks",
-                  "owner", "lower_bound", "upper_bound", "scheduled_begin_time",
-                  "actual_begin_time", "approver", "scheduled_handing_time", "scheduled_end_time",
-                  "actual_end_time", "sign_date"]
-    with codecs.open('mengtian_detailed.csv', 'a', 'gb18030') as f:
-        writer = csv.writer(f)
-        line = []
-        for item in attributes:
-            line.append(detailed_info[item])
-        writer.writerow(line)
-
-
+# it is for crawl data from cpcstats.com
 def mined_blocks_parser(rnode):
     addr = rnode["Address"]
     # index_url = "https://cpchain.io/explorer/rnode/"
@@ -45,6 +40,7 @@ def mined_blocks_parser(rnode):
     str_content = content.text
     # print(str_content)
 
+    # locate the number of blocks in the website
     left_anchor = str_content.find(r"Mined blocks :", 0)
     left_anchor = str_content.find(r": ", left_anchor)
     right_anchor = str_content.find(u"\xa0", left_anchor+1)
@@ -64,6 +60,7 @@ def mined_blocks_parser(rnode):
     return rnode
 
 
+# initiate the connection
 def connect():
     cf = Web3(Web3.HTTPProvider('http://3.1.81.79:8501'))
     return cf
@@ -72,20 +69,26 @@ def connect():
 def main():
 
     cf = connect()
-    # RNodesList = dict()
+
+    # a list of dictionary, containing info for each RNode
     RNodes_list = cf.cpc.getRNodes
     RNodes_list_with_blocks = []
-    for item in RNodes_list:
 
+    # traverse all RNodes
+    for item in RNodes_list:
         try:
             item = mined_blocks_parser(item)
-        except ConnectionError:
+            RNodes_list_with_blocks.append(item)
+            # sleep 10 seconds
             time.sleep(10)
+        except:
+            # save all crawled data if connection fails
             print("Connection error")
-        RNodes_list_with_blocks.append(item)
+            break
 
+    # write down RNodes info in csv format
     csv_write(RNodes_list_with_blocks)
-    #print(RNodes_list_with_blocks)
+    # print(RNodes_list_with_blocks)
 
 
 if __name__ == '__main__':
